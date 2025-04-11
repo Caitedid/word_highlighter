@@ -1,0 +1,29 @@
+/* ---------- popup.js ---------- */
+const inputContainer = document.getElementById('inputs');
+const colorPicker = document.getElementById('colorPicker');
+const saveButton = document.getElementById('saveButton');
+
+function createInput(value = '') {
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = 'Enter a word';
+  input.value = value;
+  inputContainer.appendChild(input);
+}
+
+chrome.storage.sync.get(['highlightWords'], function (result) {
+  const { words = [], color = '#ffff00' } = result.highlightWords || {};
+  words.forEach(word => createInput(word));
+  for (let i = words.length; i < 5; i++) createInput();
+  colorPicker.value = color;
+});
+
+saveButton.addEventListener('click', () => {
+  const words = Array.from(inputContainer.querySelectorAll('input'))
+    .map(input => input.value.trim())
+    .filter(word => word.length > 0)
+    .slice(0, 5);
+
+  const color = colorPicker.value;
+  chrome.storage.sync.set({ highlightWords: { words, color } });
+});
