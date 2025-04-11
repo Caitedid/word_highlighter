@@ -1,0 +1,32 @@
+/* ---------- content.js ---------- */
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+chrome.storage.sync.get(['highlightWords'], function (result) {
+  const { words = [], color = '#ffff00' } = result.highlightWords || {};
+  if (!words.length) return;
+
+  const regex = new RegExp(`\\b(${words.map(escapeRegExp).join('|')})\\b`, 'gi');
+
+  function walk(node) {
+    if (node.nodeType === 3) {
+      const match = node.nodeValue.match(regex);
+      if (match) {
+        const span = document.createElement('span');
+        const replacedHTML = node.nodeValue.replace(regex, (match) => `
+          <span class="highlighted-word" style="background-color: ${color};">${match}</span>
+        `);
+        const wrapper = document.createElement('span');
+        wrapper.innerHTML = replacedHTML;
+        node.parentNode.replaceChild(wrapper, node);
+      }
+    } else if (node.nodeType === 1 && node.childNodes && !/(script|style)/i.test(node.tagName)) {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        walk(node.childNodes[i]);
+      }
+    }
+  }
+
+  walk(document.body);
+});
